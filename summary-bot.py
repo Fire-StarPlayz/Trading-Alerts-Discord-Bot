@@ -4,7 +4,7 @@ from discord.ext import commands, tasks
 from datetime import datetime, timezone, timedelta
 
 # Bot setup
-my_secret = "MTM0NTgxODU3NTY1MDI5NTgwOA.Gg_ULX.6ZQDizf2NtIkher1R28__uOjwZXUapfkuhAsFE"
+TOKEN = os.get("DISCORD_BOT_TOKEN")
 CHANNEL_ID = 1345816439915024396  # Replace with your Discord channel ID
 
 intents = discord.Intents.default()
@@ -69,4 +69,4 @@ async def before_weekly_status():
     await bot.wait_until_ready()  # Ensure the bot is fully ready before starting the loop
 
 # Run bot
-bot.run(my_secret)
+bot.run(TOKEN)
