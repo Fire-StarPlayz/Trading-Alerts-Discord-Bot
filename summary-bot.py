@@ -1,10 +1,10 @@
-import os
+vimport os
 import discord
 from discord.ext import commands, tasks
 from datetime import datetime, timezone, timedelta
 
 # Bot setup
-TOKEN = os.get("DISCORD_BOT_TOKEN")
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CHANNEL_ID = 1345816439915024396  # Replace with your Discord channel ID
 
 intents = discord.Intents.default()
