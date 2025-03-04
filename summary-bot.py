@@ -55,7 +55,7 @@ async def status(ctx):
         await ctx.send("❓ No stock data has been received yet.")
 
 @tasks.loop(minutes=1)
-def weekly_status():
+async def weekly_status():
     global stock_states, stock_transitions  # Ensure we're modifying the global variables
 
     now = datetime.now(timezone.utc) - timedelta(hours=5)  # Adjust for EST (UTC-5)
