@@ -34,7 +34,7 @@ async def on_message(message):
     parts = message.content.split()
     if len(parts) >= 6 and parts[-2] == "-":
         stock_symbol = parts[3].strip(':')  # Extract stock symbol (e.g., AAPL)
-        state = " ".join(parts[-3:].strip("*"))  # "Above Threshold" or "Below Threshold"
+        state = " ".join(parts[-3:])  # "Above Threshold" or "Below Threshold"
 
         # Update tracking
         if stock_states.get(stock_symbol) != state:
