@@ -50,7 +50,7 @@ async def status(ctx):
     if last_stock:
         stock_symbol, state = last_stock
         transitions = stock_transitions.get(stock_symbol, 0)
-        await ctx.send(f"📊 **Last Stock Update:** {stock_symbol} is **{state}**\n🔄 **Transitions:** {transitions}")
+        await ctx.send(f"📊 **Last Stock Update:** {stock_symbol} is {state}\n🔄 **Transitions:** {transitions}")
     else:
         await ctx.send("❓ No stock data has been received yet.")
 
