@@ -32,9 +32,9 @@ async def on_message(message):
 
     # Check for threshold messages in format: "AAPL Stocks - Above Threshold"
     parts = message.content.split()
-    if len(parts) >= 4 and parts[-3] == "Stocks" and parts[-2] == "-":
-        stock_symbol = parts[0]  # Extract stock symbol (e.g., AAPL)
-        state = " ".join(parts[-2:])  # "Above Threshold" or "Below Threshold"
+    if len(parts) >= 6 and parts[-2] == "-":
+        stock_symbol = parts[3].strip(':')  # Extract stock symbol (e.g., AAPL)
+        state = " ".join(parts[-3:])  # "Above Threshold" or "Below Threshold"
 
         # Update tracking
         if stock_states.get(stock_symbol) != state:
