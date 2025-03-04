@@ -14,8 +14,9 @@ intents.message_content = True  # Allow reading message content
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Track state
-current_state = None
-transition_count = 0
+stock_states = {}  # Stores stock states in format: {"AAPL": "Above Threshold"}
+stock_transitions = {}  # Stores transition counts per stock
+last_stock = None  # Stores the last stock that triggered an update
 
 @bot.event
 async def on_ready():
@@ -24,45 +25,55 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    global current_state, transition_count
+    global last_stock
 
     if message.author == bot.user:
         return  # Ignore bot messages
 
-    # Check for threshold messages
-    if "Stocks - Above Threshold" in message.content:
-        if current_state != "Above Threshold":
-            transition_count += 1
-        current_state = "Above Threshold"
+    # Check for threshold messages in format: "AAPL Stocks - Above Threshold"
+    parts = message.content.split()
+    if len(parts) >= 4 and parts[-3] == "Stocks" and parts[-2] == "-":
+        stock_symbol = parts[0]  # Extract stock symbol (e.g., AAPL)
+        state = " ".join(parts[-2:])  # "Above Threshold" or "Below Threshold"
 
-    elif "Stocks - Below Threshold" in message.content:
-        if current_state != "Below Threshold":
-            transition_count += 1
-        current_state = "Below Threshold"
+        # Update tracking
+        if stock_states.get(stock_symbol) != state:
+            stock_transitions[stock_symbol] = stock_transitions.get(stock_symbol, 0) + 1
+        
+        stock_states[stock_symbol] = state
+        last_stock = (stock_symbol, state)
 
     await bot.process_commands(message)  # Allow commands to work
 
 @bot.command()
 async def status(ctx):
-    state = current_state if current_state else "Unknown"
-    await ctx.send(f"📊 **Current State:** {state}\n🔄 **Transitions:** {transition_count}")
+    if last_stock:
+        stock_symbol, state = last_stock
+        transitions = stock_transitions.get(stock_symbol, 0)
+        await ctx.send(f"📊 **Last Stock Update:** {stock_symbol} is **{state}**\n🔄 **Transitions:** {transitions}")
+    else:
+        await ctx.send("❓ No stock data has been received yet.")
 
 @tasks.loop(minutes=1)
-async def weekly_status():
-    global current_state, transition_count  # Ensure we're modifying the global variables
+def weekly_status():
+    global stock_states, stock_transitions  # Ensure we're modifying the global variables
 
     now = datetime.now(timezone.utc) - timedelta(hours=5)  # Adjust for EST (UTC-5)
     if now.weekday() == 4 and now.hour == 15 and now.minute == 0:  # Friday at 3:00 PM
         channel = bot.get_channel(CHANNEL_ID)
         if channel:
-            state = current_state if current_state else "Unknown"
-            await channel.send(f"📢 **Weekly Update** 📅\n📊 **Current State:** {state}\n🔄 **Transitions:** {transition_count}")
+            if stock_states:
+                stock_summary = "\n".join([f"📊 **{stock}**: {state} (🔄 {stock_transitions.get(stock, 0)} transitions)" for stock, state in stock_states.items()])
+            else:
+                stock_summary = "❓ No stocks recorded this week."
+
+            await channel.send(f"📢 **Weekly Update** 📅\n{stock_summary}")
 
             # Reset state and transition count
-            current_state = None
-            transition_count = 0
+            stock_states = {}
+            stock_transitions = {}
             await channel.send("🔄 **State and transitions have been reset for the new week!**")
-                        
+
 # Run the bot
 @weekly_status.before_loop
 async def before_weekly_status():
