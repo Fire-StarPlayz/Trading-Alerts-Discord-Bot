@@ -1,5 +1,5 @@
 discord.py
 python-dotenv
-flask.py
-requests.py
-discord-webhook.py
+flask
+requests
+discord-webhook
