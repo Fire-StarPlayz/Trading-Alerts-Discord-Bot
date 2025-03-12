@@ -3,4 +3,3 @@ python-dotenv
 flask
 requests
 discord-webhook
-email
