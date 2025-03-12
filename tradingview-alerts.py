@@ -3,14 +3,15 @@ import requests
 from discord_webhook import DiscordWebhook
 from datetime import datetime
 import time
+import os
 
 app = Flask(__name__)
 
 # Replace with actual values
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1345732610910982255/641aSmpD53GHAb2E-9krSn1783B3A_3cavuaCUpgz3tGNuo-nGNl80puXHL7IwLMTvQD"
-GOVEE_API_KEY = "a6ca3963-25de-4bc7-a08c-11c3e2a3f188"
-GOVEE_DEVICE = "your_govee_device_id"
-GOVEE_MODEL = "your_govee_model"
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
+GOVEE_API_KEY = os.gentenv("GOVEE_API")
+GOVEE_DEVICE = getenv("GOVEE_ID")
+GOVEE_MODEL = getenv("GOVEE_MODEL")
 
 # Function to send a Discord message
 def send_discord_message(content):
