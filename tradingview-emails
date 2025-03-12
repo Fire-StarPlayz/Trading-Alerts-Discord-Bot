@@ -1,0 +1,137 @@
+from flask import Flask, jsonify
+import imaplib
+import email
+from email.header import decode_header
+import requests
+from discord_webhook import DiscordWebhook
+from datetime import datetime
+import time
+import os
+
+app = Flask(__name__)
+
+# ENV Variables (Set these in Railway)
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
+GOVEE_API_KEY = os.getenv("GOVEE_API")
+GOVEE_DEVICE = os.getenv("GOVEE_ID")
+GOVEE_MODEL = os.getenv("GOVEE_MODEL")
+EMAIL_USER = os.getenv("EMAIL_USER")  # Your email
+EMAIL_PASS = os.getenv("EMAIL_PASS")  # App password (not regular password)
+IMAP_SERVER = "imap.gmail.com"
+
+# Function to send a Discord message
+def send_discord_message(content):
+    timestamp = datetime.now().strftime("%I:%M %p")  # Format: 03:00 PM
+    message = f"[{timestamp}]: {content}"
+    webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL, content=message)
+    webhook.execute()
+
+# Function to control Govee light
+def control_govee_light(turn_on=False, color=(255, 255, 255)):  # Default: White
+    url = "https://developer-api.govee.com/v1/devices/control"
+    headers = {
+        "Govee-API-Key": GOVEE_API_KEY,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "device": GOVEE_DEVICE,
+        "model": GOVEE_MODEL,
+        "cmd": {
+            "name": "turn",
+            "value": "on" if turn_on else "off"
+        }
+    }
+    requests.put(url, json=payload, headers=headers)
+
+    # Change light color if turning on
+    if turn_on:
+        color_payload = {
+            "device": GOVEE_DEVICE,
+            "model": GOVEE_MODEL,
+            "cmd": {
+                "name": "color",
+                "value": {"r": color[0], "g": color[1], "b": color[2]}
+            }
+        }
+        requests.put(url, json=color_payload, headers=headers)
+
+# Function to fetch latest stock email
+def fetch_latest_email():
+    try:
+        mail = imaplib.IMAP4_SSL(IMAP_SERVER)
+        mail.login(EMAIL_USER, EMAIL_PASS)
+        mail.select("inbox")
+
+        # Search for unread emails
+        status, messages = mail.search(None, '(UNSEEN)')
+        email_ids = messages[0].split()
+
+        if not email_ids:
+            return None  # No new emails
+
+        latest_email_id = email_ids[-1]  # Get the latest email
+        _, msg_data = mail.fetch(latest_email_id, "(RFC822)")
+        for response_part in msg_data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_bytes(response_part[1])
+                subject, encoding = decode_header(msg["Subject"])[0]
+                if isinstance(subject, bytes):
+                    subject = subject.decode(encoding or "utf-8")
+
+                # Extract email content
+                if msg.is_multipart():
+                    for part in msg.walk():
+                        if part.get_content_type() == "text/plain":
+                            body = part.get_payload(decode=True).decode()
+                            return body.strip()
+                else:
+                    return msg.get_payload(decode=True).decode().strip()
+    except Exception as e:
+        print(f"Error fetching email: {e}")
+    return None
+
+@app.route("/check-email", methods=["GET"])
+def check_email():
+    email_content = fetch_latest_email()
+
+    if not email_content:
+        return jsonify({"status": "no new emails"}), 200
+
+    print("Received email data:", email_content)
+
+    # Expected format: "AAPL Crossing Down 241.84"
+    parts = email_content.split()
+    if len(parts) < 4:
+        send_discord_message("❓ Unexpected email format received.")
+        return jsonify({"status": "error", "message": "Invalid format"}), 400
+
+    stock_symbol = parts[0]  # e.g., "AAPL"
+    direction = parts[2]  # "Up" or "Down"
+    price = parts[3]  # e.g., "241.84"
+
+    # Determine light color based on direction
+    if direction.lower() == "down":
+        color = (255, 0, 0)  # Red for Down
+        emoji = "📉"
+    elif direction.lower() == "up":
+        color = (0, 255, 0)  # Green for Up
+        emoji = "📈"
+    else:
+        color = (255, 255, 255)  # White for unknown
+        emoji = "❓"
+
+    # Format Discord message
+    stock_message = f"{emoji} **{stock_symbol}**: **{direction}** - **${price}**"
+
+    # Send to Discord & control light
+    send_discord_message(stock_message)
+    control_govee_light(turn_on=True, color=color)
+    
+    # Turn off light after 5 seconds
+    time.sleep(5)
+    control_govee_light(turn_on=False)
+
+    return jsonify({"status": "success"}), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
