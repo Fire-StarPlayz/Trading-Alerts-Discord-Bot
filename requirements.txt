@@ -3,5 +3,4 @@ python-dotenv
 flask
 requests
 discord-webhook
-imaplib
 email
