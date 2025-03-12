@@ -10,8 +10,8 @@ app = Flask(__name__)
 # Replace with actual values
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
 GOVEE_API_KEY = os.getenv("GOVEE_API")
-GOVEE_DEVICE = getenv("GOVEE_ID")
-GOVEE_MODEL = getenv("GOVEE_MODEL")
+GOVEE_DEVICE = os.getenv("GOVEE_ID")
+GOVEE_MODEL = os.getenv("GOVEE_MODEL")
 
 # Function to send a Discord message
 def send_discord_message(content):
