@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 # Replace with actual values
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
-GOVEE_API_KEY = os.gentenv("GOVEE_API")
+GOVEE_API_KEY = os.getenv("GOVEE_API")
 GOVEE_DEVICE = getenv("GOVEE_ID")
 GOVEE_MODEL = getenv("GOVEE_MODEL")
 
